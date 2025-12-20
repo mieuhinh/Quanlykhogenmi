@@ -3,105 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Kho Đa Kho</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Quản Lý Kho Chuyên Nghiệp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f8f9fa; padding-top: 20px; }
-        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
-        .status-badge { font-size: 0.8rem; }
+        body { padding-bottom: 90px; background-color: #f8fafc; font-family: sans-serif; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: center; }
+        th { background: #f1f5f9; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 class="text-center mb-4 text-primary">Hệ Thống Quản Lý Kho</h2>
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Giao Dịch Kho</h5>
-                <form id="warehouseForm" class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Mã Hàng</label>
-                        <input type="text" id="itemId" class="form-control" placeholder="VD: AO-01" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Chọn Kho</label>
-                        <select id="warehouseId" class="form-select">
-                            <option value="KHO-A">Kho Cơ Sở A</option>
-                            <option value="KHO-B">Kho Cơ Sở B</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Loại</label>
-                        <select id="type" class="form-select">
-                            <option value="NHAP">Nhập Kho</option>
-                            <option value="XUAT">Xuất Kho</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Số Lượng</label>
-                        <input type="number" id="quantity" class="form-control" min="1" required>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Cập Nhật</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Tồn Kho Hiện Tại</h5>
-                <div class="table-responsive">
-                    <table class="table table-hover mt-3">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Mã Hàng</th>
-                                <th>Kho</th>
-                                <th>Số Lượng Tồn</th>
-                                <th>Trạng Thái</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryBody">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <div class="bg-blue-700 text-white p-4 sticky top-0 shadow-lg flex justify-between items-center">
+        <h1 id="page-title" class="font-bold uppercase tracking-wide">Quản Lý Kho</h1>
+        <button onclick="fetchData()" class="bg-blue-500 p-2 rounded-full">🔄</button>
     </div>
 
+    <div id="content" class="p-4"></div>
+
+    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 shadow-2xl z-50">
+        <button onclick="renderHome()" class="text-gray-500 flex flex-col items-center">🏠<span class="text-[10px]">Home</span></button>
+        <button onclick="renderForm('Nhập')" class="text-gray-500 flex flex-col items-center text-green-600">➕<span class="text-[10px]">Nhập</span></button>
+        <button onclick="renderForm('Xuất')" class="text-gray-500 flex flex-col items-center text-red-600">➖<span class="text-[10px]">Xuất</span></button>
+        <button onclick="renderReportPeriod()" class="text-blue-600 flex flex-col items-center">📅<span class="text-[10px]">Báo cáo kỳ</span></button>
+    </nav>
+
     <script>
-        // Cấu hình URL Google Apps Script của bạn tại đây
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlvmn5-Fu1LJ9cSn5-KWBZQO3H4Kg9elMXbi_4P3lpDYlK6ddchjcLa7Ucfcti08lRwg/exec";
+        const SCRIPT_URL = "URL_GOOGLE_APPS_SCRIPT_CUA_BAN"; 
+        let database = [];
+        let tempItems = [];
 
-        document.getElementById('warehouseForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        async function fetchData() {
+            try {
+                const res = await fetch(SCRIPT_URL);
+                database = await res.json();
+                renderHome();
+            } catch (e) { alert("Lỗi kết nối dữ liệu!"); }
+        }
+
+        function renderHome() {
+            document.getElementById('page-title').innerText = "Trang Chủ";
+            document.getElementById('content').innerHTML = `
+                <div class="card p-8 text-center bg-gradient-to-br from-blue-50 to-white border border-blue-100">
+                    <p class="text-gray-500 uppercase text-xs font-bold mb-2">Tổng số dòng dữ liệu</p>
+                    <h2 class="text-5xl font-black text-blue-700">${database.length}</h2>
+                </div>
+            `;
+        }
+
+        function renderForm(type) {
+            tempItems = [];
+            document.getElementById('page-title').innerText = "Phiếu " + type;
+            document.getElementById('content').innerHTML = `
+                <div class="card p-4 mb-4 border-l-4 ${type==='Nhập'?'border-green-500':'border-red-500'}">
+                    <input id="soPhieu" type="text" placeholder="Số chứng từ (VD: PN001)" class="w-full border p-3 mb-2 rounded-lg">
+                    <select id="kho" class="w-full border p-3 mb-2 rounded-lg">
+                        <option value="Kho Quốc Việt">Kho Quốc Việt</option>
+                        <option value="Kho Miền Nam">Kho Miền Nam</option>
+                    </select>
+                </div>
+                <div class="card p-4 mb-4">
+                    <input id="maSP" type="text" placeholder="Mã sản phẩm" class="w-full border p-3 mb-2 rounded-lg">
+                    <input id="soluong" type="number" placeholder="Số lượng" class="w-full border p-3 mb-2 rounded-lg">
+                    <button onclick="addItem()" class="w-full bg-gray-100 text-blue-700 p-3 rounded-lg font-bold border border-blue-200">+ THÊM MẶT HÀNG</button>
+                </div>
+                <div id="itemList" class="mb-4"></div>
+                <button onclick="submitForm('${type}')" id="btnSave" class="hidden w-full bg-blue-700 text-white p-4 rounded-xl font-bold shadow-lg">LƯU PHIẾU VÀO GOOGLE SHEET</button>
+            `;
+        }
+
+        function addItem() {
+            const ma = document.getElementById('maSP').value.trim();
+            const sl = document.getElementById('soluong').value;
+            if(!ma || !sl) return alert("Nhập đủ Mã và SL!");
+            tempItems.push({ maSP: ma, soluong: Number(sl) });
+            let html = '<div class="card p-2 bg-gray-50">';
+            tempItems.forEach((item, i) => html += `<div class="p-2 border-b flex justify-between"><span>${i+1}. ${item.maSP}</span><b>${item.soluong}</b></div>`);
+            document.getElementById('itemList').innerHTML = html + '</div>';
+            document.getElementById('maSP').value = ""; document.getElementById('soluong').value = "";
+            document.getElementById('btnSave').classList.remove('hidden');
+        }
+
+        async function submitForm(type) {
+            const btn = document.getElementById('btnSave');
+            btn.innerText = "ĐANG XỬ LÝ..."; btn.disabled = true;
+            const payload = { loai: type, kho: document.getElementById('kho').value, soPhieu: document.getElementById('soPhieu').value, items: tempItems };
+            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+            alert("Thành công!"); fetchData();
+        }
+
+        function renderReportPeriod() {
+            document.getElementById('page-title').innerText = "Báo Cáo Nhập Xuất Tồn";
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('content').innerHTML = `
+                <div class="card p-4 mb-4">
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div><label class="text-[10px] font-bold">TỪ NGÀY</label><input type="date" id="dateFrom" value="${today}" class="w-full border p-2 rounded"></div>
+                        <div><label class="text-[10px] font-bold">ĐẾN NGÀY</label><input type="date" id="dateTo" value="${today}" class="w-full border p-2 rounded"></div>
+                    </div>
+                    <button onclick="processPeriodData()" class="w-full bg-blue-600 text-white p-2 rounded font-bold italic">Xem Báo Cáo</button>
+                </div>
+                <div id="reportResult" class="table-container"></div>
+            `;
+        }
+
+        function processPeriodData() {
+            const dFrom = new Date(document.getElementById('dateFrom').value + "T00:00:00");
+            const dTo = new Date(document.getElementById('dateTo').value + "T23:59:59");
             
-            const data = {
-                maHang: document.getElementById('itemId').value,
-                maKho: document.getElementById('warehouseId').value,
-                loai: document.getElementById('type').value,
-                soLuong: document.getElementById('quantity').value
-            };
+            let summary = {}; // Key: "MaSP | Kho"
 
-            // Hiệu ứng chờ khi gửi dữ liệu
-            const btn = e.target.querySelector('button');
-            btn.disabled = true;
-            btn.innerText = "Đang gửi...";
+            database.forEach(row => {
+                const rowDate = new Date(row[0]);
+                const type = row[1];
+                const sku = row[2];
+                const qty = Number(row[3]);
+                const warehouse = row[4];
+                const key = `${sku} [${warehouse}]`;
 
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Quan trọng khi dùng Google Script
-                body: JSON.stringify(data)
-            }).then(() => {
-                alert("Đã ghi nhận giao dịch thành công!");
-                btn.disabled = false;
-                btn.innerText = "Cập Nhật";
-                e.target.reset();
-            }).catch(err => {
-                console.error(err);
-                alert("Có lỗi xảy ra!");
+                if (!summary[key]) summary[key] = { dau: 0, nhap: 0, xuat: 0 };
+
+                if (rowDate < dFrom) {
+                    // Tính tồn đầu
+                    summary[key].dau += (type === "Nhập" ? qty : -qty);
+                } else if (rowDate >= dFrom && rowDate <= dTo) {
+                    // Tính phát sinh trong kỳ
+                    if (type === "Nhập") summary[key].nhap += qty;
+                    else summary[key].xuat += qty;
+                }
             });
-        });
+
+            let html = `<table><thead><tr><th>SP [Kho]</th><th>Đầu</th><th>Nhập</th><th>Xuất</th><th>Cuối</th></tr></thead><tbody>`;
+            for (let k in summary) {
+                const s = summary[k];
+                const cuoi = s.dau + s.nhap - s.xuat;
+                html += `<tr>
+                    <td class="text-left font-medium">${k}</td>
+                    <td class="bg-gray-50">${s.dau}</td>
+                    <td class="text-green-600 font-bold">${s.nhap}</td>
+                    <td class="text-red-600 font-bold">${s.xuat}</td>
+                    <td class="bg-blue-50 font-black">${cuoi}</td>
+                </tr>`;
+            }
+            document.getElementById('reportResult').innerHTML = html + `</tbody></table>`;
+        }
+
+        fetchData();
     </script>
 </body>
 </html>
