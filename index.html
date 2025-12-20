@@ -3,52 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Kho Chuyên Nghiệp</title>
+    <title>Quản Lý Kho Thông Minh</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { padding-bottom: 90px; background-color: #f8fafc; font-family: sans-serif; }
-        .card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: center; }
-        th { background: #f1f5f9; }
+        body { padding-bottom: 90px; background-color: #f3f4f6; font-family: sans-serif; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
+        th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: #64748b; }
     </style>
 </head>
 <body>
 
-    <div class="bg-blue-700 text-white p-4 sticky top-0 shadow-lg flex justify-between items-center">
-        <h1 id="page-title" class="font-bold uppercase tracking-wide">Quản Lý Kho</h1>
-        <button onclick="fetchData()" class="bg-blue-500 p-2 rounded-full">🔄</button>
+    <div class="bg-indigo-700 text-white p-4 sticky top-0 flex justify-between items-center shadow-md z-50">
+        <h1 id="page-title" class="font-bold uppercase tracking-wider">Quản Lý Kho</h1>
+        <button onclick="fetchData()" class="p-2 bg-indigo-500 rounded-full active:scale-90 transition">🔄</button>
     </div>
 
     <div id="content" class="p-4"></div>
 
-    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 shadow-2xl z-50">
-        <button onclick="renderHome()" class="text-gray-500 flex flex-col items-center">🏠<span class="text-[10px]">Home</span></button>
-        <button onclick="renderForm('Nhập')" class="text-gray-500 flex flex-col items-center text-green-600">➕<span class="text-[10px]">Nhập</span></button>
-        <button onclick="renderForm('Xuất')" class="text-gray-500 flex flex-col items-center text-red-600">➖<span class="text-[10px]">Xuất</span></button>
-        <button onclick="renderReportPeriod()" class="text-blue-600 flex flex-col items-center">📅<span class="text-[10px]">Báo cáo kỳ</span></button>
+    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 shadow-lg z-50">
+        <button onclick="renderHome()" class="flex flex-col items-center text-gray-500">🏠<span class="text-[10px]">Home</span></button>
+        <button onclick="renderForm('Nhập')" class="flex flex-col items-center text-green-600 font-bold">➕<span class="text-[10px]">Nhập</span></button>
+        <button onclick="renderForm('Xuất')" class="flex flex-col items-center text-red-600 font-bold">➖<span class="text-[10px]">Xuất</span></button>
+        <button onclick="renderReportPeriod()" class="flex flex-col items-center text-indigo-600">📊<span class="text-[10px]">Báo cáo</span></button>
     </nav>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHEUP0fyVAb1d3bN_gsGlXvjTaamgC0F6KUSL0iQkYDi2s37EBCVAlC-qwAPNZAnzgHw/exec"; 
-        let database = [];
+        const SCRIPT_URL = "URL_GOOGLE_APPS_SCRIPT_CUA_BAN"; 
+        let rawData = { transactions: [], products: [], warehouses: [] };
         let tempItems = [];
 
         async function fetchData() {
+            const content = document.getElementById('content');
+            content.innerHTML = "<div class='text-center mt-20'><div class='animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full'></div><p class='mt-2 text-gray-500'>Đang đồng bộ...</p></div>";
             try {
                 const res = await fetch(SCRIPT_URL);
-                database = await res.json();
+                rawData = await res.json();
                 renderHome();
-            } catch (e) { alert("Lỗi kết nối dữ liệu!"); }
+            } catch (e) { content.innerHTML = "<p class='text-red-500 text-center'>Lỗi kết nối!</p>"; }
         }
 
         function renderHome() {
             document.getElementById('page-title').innerText = "Trang Chủ";
             document.getElementById('content').innerHTML = `
-                <div class="card p-8 text-center bg-gradient-to-br from-blue-50 to-white border border-blue-100">
-                    <p class="text-gray-500 uppercase text-xs font-bold mb-2">Tổng số dòng dữ liệu</p>
-                    <h2 class="text-5xl font-black text-blue-700">${database.length}</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="card p-6 text-center border-b-4 border-indigo-500">
+                        <p class="text-[10px] text-gray-400 font-bold">GIAO DỊCH</p>
+                        <h2 class="text-3xl font-black text-indigo-700">${rawData.transactions.length}</h2>
+                    </div>
+                    <div class="card p-6 text-center border-b-4 border-orange-400">
+                        <p class="text-[10px] text-gray-400 font-bold">SẢN PHẨM</p>
+                        <h2 class="text-3xl font-black text-orange-600">${rawData.products.length}</h2>
+                    </div>
                 </div>
             `;
         }
@@ -56,98 +62,105 @@
         function renderForm(type) {
             tempItems = [];
             document.getElementById('page-title').innerText = "Phiếu " + type;
+            let whOptions = rawData.warehouses.map(k => `<option value="${k}">${k}</option>`).join('');
+            let pDatalist = `<datalist id="pList">${rawData.products.map(p => `<option value="${p}">`).join('')}</datalist>`;
+
             document.getElementById('content').innerHTML = `
-                <div class="card p-4 mb-4 border-l-4 ${type==='Nhập'?'border-green-500':'border-red-500'}">
-                    <input id="soPhieu" type="text" placeholder="Số chứng từ (VD: PN001)" class="w-full border p-3 mb-2 rounded-lg">
-                    <select id="kho" class="w-full border p-3 mb-2 rounded-lg">
-                        <option value="Kho Quốc Việt">Kho Quốc Việt</option>
-                        <option value="Kho Miền Nam">Kho Miền Nam</option>
-                    </select>
+                ${pDatalist}
+                <div class="card p-4 mb-4 border-l-8 ${type==='Nhập'?'border-green-500':'border-red-500'}">
+                    <label class="text-[10px] font-bold text-gray-400">SỐ CHỨNG TỪ / MÃ PHIẾU</label>
+                    <input id="soPhieu" type="text" class="w-full border-b-2 py-2 mb-4 outline-none focus:border-indigo-500">
+                    <label class="text-[10px] font-bold text-gray-400">CHỌN KHO</label>
+                    <select id="kho" class="w-full bg-gray-50 p-3 rounded-lg mt-1 outline-none">${whOptions}</select>
                 </div>
                 <div class="card p-4 mb-4">
-                    <input id="maSP" type="text" placeholder="Mã sản phẩm" class="w-full border p-3 mb-2 rounded-lg">
-                    <input id="soluong" type="number" placeholder="Số lượng" class="w-full border p-3 mb-2 rounded-lg">
-                    <button onclick="addItem()" class="w-full bg-gray-100 text-blue-700 p-3 rounded-lg font-bold border border-blue-200">+ THÊM MẶT HÀNG</button>
+                    <input id="maSP" list="pList" type="text" placeholder="Mã sản phẩm (Gợi ý...)" class="w-full border p-3 mb-3 rounded-lg">
+                    <input id="soluong" type="number" placeholder="Số lượng" class="w-full border p-3 mb-4 rounded-lg">
+                    <button onclick="addItem()" class="w-full py-3 bg-indigo-50 text-indigo-700 rounded-lg font-bold border border-indigo-200">+ THÊM VÀO PHIẾU</button>
                 </div>
-                <div id="itemList" class="mb-4"></div>
-                <button onclick="submitForm('${type}')" id="btnSave" class="hidden w-full bg-blue-700 text-white p-4 rounded-xl font-bold shadow-lg">LƯU PHIẾU VÀO GOOGLE SHEET</button>
+                <div id="listDisplay"></div>
+                <button id="btnSave" onclick="submitForm('${type}')" class="hidden w-full bg-indigo-700 text-white p-4 rounded-xl font-bold mt-4 shadow-lg active:scale-95 transition">XÁC NHẬN LƯU</button>
             `;
         }
 
         function addItem() {
-            const ma = document.getElementById('maSP').value.trim();
-            const sl = document.getElementById('soluong').value;
-            if(!ma || !sl) return alert("Nhập đủ Mã và SL!");
-            tempItems.push({ maSP: ma, soluong: Number(sl) });
-            let html = '<div class="card p-2 bg-gray-50">';
-            tempItems.forEach((item, i) => html += `<div class="p-2 border-b flex justify-between"><span>${i+1}. ${item.maSP}</span><b>${item.soluong}</b></div>`);
-            document.getElementById('itemList').innerHTML = html + '</div>';
+            const m = document.getElementById('maSP').value.trim();
+            const s = document.getElementById('soluong').value;
+            if(!m || !s) return alert("Thiếu thông tin!");
+            tempItems.push({ maSP: m, soluong: Number(s) });
+            let h = '<div class="card p-2 bg-gray-50">';
+            tempItems.forEach((it, i) => h += `<div class="flex justify-between p-2 border-b text-sm"><span>${i+1}. ${it.maSP}</span><b>${it.soluong}</b></div>`);
+            document.getElementById('listDisplay').innerHTML = h + '</div>';
             document.getElementById('maSP').value = ""; document.getElementById('soluong').value = "";
             document.getElementById('btnSave').classList.remove('hidden');
         }
 
         async function submitForm(type) {
             const btn = document.getElementById('btnSave');
-            btn.innerText = "ĐANG XỬ LÝ..."; btn.disabled = true;
-            const payload = { loai: type, kho: document.getElementById('kho').value, soPhieu: document.getElementById('soPhieu').value, items: tempItems };
+            btn.innerText = "ĐANG GỬI..."; btn.disabled = true;
+            const payload = { loai: type, kho: document.getElementById('kho').value, soPhieu: document.getElementById('soPhieu').value || "KSP", items: tempItems };
             await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
-            alert("Thành công!"); fetchData();
+            alert("Đã lưu vào Google Sheet!"); fetchData();
         }
 
         function renderReportPeriod() {
-            document.getElementById('page-title').innerText = "Báo Cáo Nhập Xuất Tồn";
+            document.getElementById('page-title').innerText = "Báo Cáo Tồn Kho";
             const today = new Date().toISOString().split('T')[0];
+            let whOptions = `<option value="ALL">--- Tất cả các kho ---</option>` + rawData.warehouses.map(k => `<option value="${k}">${k}</option>`).join('');
+
             document.getElementById('content').innerHTML = `
                 <div class="card p-4 mb-4">
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <div><label class="text-[10px] font-bold">TỪ NGÀY</label><input type="date" id="dateFrom" value="${today}" class="w-full border p-2 rounded"></div>
-                        <div><label class="text-[10px] font-bold">ĐẾN NGÀY</label><input type="date" id="dateTo" value="${today}" class="w-full border p-2 rounded"></div>
+                    <label class="text-[10px] font-bold text-gray-400">LỌC THEO KHO</label>
+                    <select id="filterKho" class="w-full border p-2 mb-3 rounded-lg">${whOptions}</select>
+                    
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div><label class="text-[10px] font-bold">TỪ NGÀY</label><input type="date" id="dFrom" value="${today}" class="w-full border p-2 rounded"></div>
+                        <div><label class="text-[10px] font-bold">ĐẾN NGÀY</label><input type="date" id="dTo" value="${today}" class="w-full border p-2 rounded"></div>
                     </div>
-                    <button onclick="processPeriodData()" class="w-full bg-blue-600 text-white p-2 rounded font-bold italic">Xem Báo Cáo</button>
+                    <button onclick="calculate()" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-bold shadow-md active:bg-indigo-800">XEM BÁO CÁO</button>
                 </div>
-                <div id="reportResult" class="table-container"></div>
+                <div id="reportArea" class="overflow-x-auto rounded-lg bg-white"></div>
             `;
         }
 
-        function processPeriodData() {
-            const dFrom = new Date(document.getElementById('dateFrom').value + "T00:00:00");
-            const dTo = new Date(document.getElementById('dateTo').value + "T23:59:59");
-            
-            let summary = {}; // Key: "MaSP | Kho"
+        function calculate() {
+            const fWh = document.getElementById('filterKho').value;
+            const tF = new Date(document.getElementById('dFrom').value + "T00:00:00");
+            const tT = new Date(document.getElementById('dTo').value + "T23:59:59");
+            let stats = {};
 
-            database.forEach(row => {
-                const rowDate = new Date(row[0]);
-                const type = row[1];
-                const sku = row[2];
-                const qty = Number(row[3]);
-                const warehouse = row[4];
-                const key = `${sku} [${warehouse}]`;
+            rawData.transactions.forEach(r => {
+                const date = new Date(r[0]), type = r[1], sku = r[2], qty = Number(r[3]), wh = r[4];
+                
+                // Lọc theo kho: Nếu khác kho đang chọn (và không phải chọn 'ALL') thì bỏ qua
+                if (fWh !== "ALL" && wh !== fWh) return;
 
-                if (!summary[key]) summary[key] = { dau: 0, nhap: 0, xuat: 0 };
+                // Nếu chọn 'ALL', gom nhóm theo Sản phẩm + Kho. Nếu chọn kho cụ thể, chỉ gom theo Sản phẩm.
+                const key = (fWh === "ALL") ? `${sku} [${wh}]` : sku;
 
-                if (rowDate < dFrom) {
-                    // Tính tồn đầu
-                    summary[key].dau += (type === "Nhập" ? qty : -qty);
-                } else if (rowDate >= dFrom && rowDate <= dTo) {
-                    // Tính phát sinh trong kỳ
-                    if (type === "Nhập") summary[key].nhap += qty;
-                    else summary[key].xuat += qty;
+                if (!stats[key]) stats[key] = { d: 0, n: 0, x: 0 };
+                if (date < tF) stats[key].d += (type === "Nhập" ? qty : -qty);
+                else if (date <= tT) {
+                    if (type === "Nhập") stats[key].n += qty; else stats[key].x += qty;
                 }
             });
 
-            let html = `<table><thead><tr><th>SP [Kho]</th><th>Đầu</th><th>Nhập</th><th>Xuất</th><th>Cuối</th></tr></thead><tbody>`;
-            for (let k in summary) {
-                const s = summary[k];
-                const cuoi = s.dau + s.nhap - s.xuat;
-                html += `<tr>
-                    <td class="text-left font-medium">${k}</td>
-                    <td class="bg-gray-50">${s.dau}</td>
-                    <td class="text-green-600 font-bold">${s.nhap}</td>
-                    <td class="text-red-600 font-bold">${s.xuat}</td>
-                    <td class="bg-blue-50 font-black">${cuoi}</td>
+            let h = `<table class="w-full text-xs"><thead><tr>
+                <th class="text-left font-bold text-indigo-700">${fWh === "ALL" ? 'SP [Kho]' : 'Mã Sản Phẩm'}</th>
+                <th>Đầu</th><th>Nhập</th><th>Xuất</th><th class="bg-indigo-50">Cuối</th>
+            </tr></thead><tbody>`;
+            
+            for (let k in stats) {
+                let s = stats[k]; let c = s.d + s.n - s.x;
+                h += `<tr class="border-b">
+                    <td class="p-3 text-left font-medium">${k}</td>
+                    <td class="text-gray-500">${s.d}</td>
+                    <td class="text-green-600 font-bold">${s.n}</td>
+                    <td class="text-red-600 font-bold">${s.x}</td>
+                    <td class="font-black text-indigo-700 bg-indigo-50">${c}</td>
                 </tr>`;
             }
-            document.getElementById('reportResult').innerHTML = html + `</tbody></table>`;
+            document.getElementById('reportArea').innerHTML = h + "</tbody></table>";
         }
 
         fetchData();
