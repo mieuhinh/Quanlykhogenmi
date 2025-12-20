@@ -167,50 +167,66 @@
     let stats = {};
 
     rawData.transactions.forEach(r => {
-        const date = new Date(r[0]), type = r[1], sku = r[2], qty = Number(r[3]), wh = r[4];
-        
+        const rowDate = new Date(r[0]);
+        const type = r[1];
+        const sku = r[2]; // Mã sản phẩm
+        const qty = Number(r[3]);
+        const wh = r[4];  // Tên kho
+
+        // Lọc theo kho nếu người dùng chọn một kho cụ thể
         if (fWh !== "ALL" && wh !== fWh) return;
 
-        // CHỈ LẤY SKU LÀM KEY ĐỂ KHÔNG BỊ HIỆN TÊN KHO Ở CỘT 1
-        const key = sku; 
+        // Định danh duy nhất: 
+        // Nếu xem tất cả kho thì gộp SKU + Kho để tính riêng từng dòng.
+        // Nếu xem 1 kho cụ thể thì chỉ dùng SKU làm key.
+        const key = (fWh === "ALL") ? `${sku} [${wh}]` : sku;
 
-        if (!stats[key]) stats[key] = { d: 0, n: 0, x: 0, wh: wh };
-        if (date < tF) {
+        if (!stats[key]) {
+            stats[key] = { sku: sku, wh: wh, d: 0, n: 0, x: 0 };
+        }
+
+        if (rowDate < tF) {
             stats[key].d += (type === "Nhập" ? qty : -qty);
-        } else if (date <= tT) {
+        } else if (rowDate <= tT) {
             if (type === "Nhập") stats[key].n += qty; 
             else stats[key].x += qty;
         }
     });
 
-    // Cập nhật tiêu đề bảng và dữ liệu hàng
+    // Tạo bảng hiển thị
     let h = `<table class="w-full text-xs">
         <thead>
-            <tr class="bg-indigo-50">
+            <tr class="bg-indigo-50 text-indigo-900 font-bold">
                 <th class="p-2 text-left">Mã Sản Phẩm</th>
-                ${fWh === "ALL" ? '<th class="p-2">Kho</th>' : ''}
-                <th class="p-2">Đầu</th>
-                <th class="p-2">Nhập</th>
-                <th class="p-2">Xuất</th>
-                <th class="p-2 bg-indigo-100">Cuối</th>
+                ${fWh === "ALL" ? '<th class="p-2 text-left">Kho</th>' : ''}
+                <th class="p-2">Đầu kỳ</th>
+                <th class="p-2 text-green-700">Nhập</th>
+                <th class="p-2 text-red-700">Xuất</th>
+                <th class="p-2 bg-indigo-100">Cuối kỳ</th>
             </tr>
         </thead>
         <tbody>`;
     
     for (let k in stats) {
         let s = stats[k]; 
-        let c = s.d + s.n - s.x;
-        h += `<tr class="border-b">
-            <td class="p-3 text-left font-medium text-blue-700">${k}</td>
-            ${fWh === "ALL" ? `<td class="p-3 text-gray-500">${s.wh}</td>` : ''}
-            <td class="p-3">${s.d}</td>
+        let cuoiKy = s.d + s.n - s.x;
+        h += `<tr class="border-b hover:bg-gray-50">
+            <td class="p-3 text-left font-bold text-gray-800">${s.sku}</td>
+            ${fWh === "ALL" ? `<td class="p-3 text-left text-gray-500">${s.wh}</td>` : ''}
+            <td class="p-3 text-gray-600">${s.d}</td>
             <td class="p-3 text-green-600 font-bold">${s.n}</td>
             <td class="p-3 text-red-600 font-bold">${s.x}</td>
-            <td class="p-3 font-black text-indigo-700 bg-indigo-50">${c}</td>
+            <td class="p-3 font-black text-indigo-700 bg-indigo-50 text-center">${cuoiKy}</td>
         </tr>`;
     }
+    
+    if (Object.keys(stats).length === 0) {
+        h += `<tr><td colspan="6" class="p-10 text-center text-gray-400 italic">Không có dữ liệu trong khoảng thời gian này</td></tr>`;
+    }
+
     document.getElementById('reportArea').innerHTML = h + "</tbody></table>";
 }
+
 
 
         fetchData();
