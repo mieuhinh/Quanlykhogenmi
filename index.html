@@ -161,27 +161,57 @@
         }
 
         function calculate() {
-            const fWh = document.getElementById('filterKho').value;
-            const tF = new Date(document.getElementById('dFrom').value + "T00:00:00");
-            const tT = new Date(document.getElementById('dTo').value + "T23:59:59");
-            let stats = {};
+    const fWh = document.getElementById('filterKho').value;
+    const tF = new Date(document.getElementById('dFrom').value + "T00:00:00");
+    const tT = new Date(document.getElementById('dTo').value + "T23:59:59");
+    let stats = {};
 
-            rawData.transactions.forEach(r => {
-                const date = new Date(r[0]), type = r[1], sku = r[2], qty = Number(r[3]), wh = r[4];
-                if (fWh !== "ALL" && wh !== fWh) return;
-                const key = (fWh === "ALL") ? `${sku} [${wh}]` : sku;
-                if (!stats[key]) stats[key] = { d: 0, n: 0, x: 0 };
-                if (date < tF) stats[key].d += (type === "Nhập" ? qty : -qty);
-                else if (date <= tT) { if (type === "Nhập") stats[key].n += qty; else stats[key].x += qty; }
-            });
+    rawData.transactions.forEach(r => {
+        const date = new Date(r[0]), type = r[1], sku = r[2], qty = Number(r[3]), wh = r[4];
+        
+        if (fWh !== "ALL" && wh !== fWh) return;
 
-            let h = `<table class="w-full text-xs"><thead><tr class="bg-indigo-50"><th>Mặt hàng</th><th>Đầu</th><th>Nhập</th><th>Xuất</th><th class="bg-indigo-100">Cuối</th></tr></thead><tbody>`;
-            for (let k in stats) {
-                let s = stats[k]; let c = s.d + s.n - s.x;
-                h += `<tr><td class="p-3 text-left font-medium">${k}</td><td>${s.d}</td><td class="text-green-600 font-bold">${s.n}</td><td class="text-red-600 font-bold">${s.x}</td><td class="font-bold text-indigo-700 bg-indigo-50">${c}</td></tr>`;
-            }
-            document.getElementById('reportArea').innerHTML = h + "</tbody></table>";
+        // CHỈ LẤY SKU LÀM KEY ĐỂ KHÔNG BỊ HIỆN TÊN KHO Ở CỘT 1
+        const key = sku; 
+
+        if (!stats[key]) stats[key] = { d: 0, n: 0, x: 0, wh: wh };
+        if (date < tF) {
+            stats[key].d += (type === "Nhập" ? qty : -qty);
+        } else if (date <= tT) {
+            if (type === "Nhập") stats[key].n += qty; 
+            else stats[key].x += qty;
         }
+    });
+
+    // Cập nhật tiêu đề bảng và dữ liệu hàng
+    let h = `<table class="w-full text-xs">
+        <thead>
+            <tr class="bg-indigo-50">
+                <th class="p-2 text-left">Mã Sản Phẩm</th>
+                ${fWh === "ALL" ? '<th class="p-2">Kho</th>' : ''}
+                <th class="p-2">Đầu</th>
+                <th class="p-2">Nhập</th>
+                <th class="p-2">Xuất</th>
+                <th class="p-2 bg-indigo-100">Cuối</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    
+    for (let k in stats) {
+        let s = stats[k]; 
+        let c = s.d + s.n - s.x;
+        h += `<tr class="border-b">
+            <td class="p-3 text-left font-medium text-blue-700">${k}</td>
+            ${fWh === "ALL" ? `<td class="p-3 text-gray-500">${s.wh}</td>` : ''}
+            <td class="p-3">${s.d}</td>
+            <td class="p-3 text-green-600 font-bold">${s.n}</td>
+            <td class="p-3 text-red-600 font-bold">${s.x}</td>
+            <td class="p-3 font-black text-indigo-700 bg-indigo-50">${c}</td>
+        </tr>`;
+    }
+    document.getElementById('reportArea').innerHTML = h + "</tbody></table>";
+}
+
 
         fetchData();
     </script>
