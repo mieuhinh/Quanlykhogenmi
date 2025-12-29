@@ -1015,6 +1015,38 @@ css
                 transition-duration: 0.01ms !important;
             }
         }
+	/* --- SỬA LỖI CUỘN CHO POPUP/MODAL --- */
+
+/* 1. Lớp nền đen (Overlay) */
+div[style*="position: fixed"][style*="z-index"] {
+    display: flex !important;
+    align-items: center !important; /* Căn giữa theo chiều dọc */
+    justify-content: center !important; /* Căn giữa theo chiều ngang */
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    overflow-y: auto !important; /* QUAN TRỌNG: Cho phép cuộn lớp nền */
+    padding: 20px !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 2. Khung nội dung trắng bên trong Popup */
+div[style*="position: fixed"][style*="z-index"] > div {
+    position: relative !important;
+    margin: auto !important; /* Giúp căn giữa khi cuộn */
+    max-height: 90vh !important; /* Không cho popup vượt quá 90% chiều cao màn hình */
+    overflow-y: auto !important; /* QUAN TRỌNG: Tự hiện thanh cuộn bên trong popup */
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
+
+/* 3. Tối ưu riêng cho điện thoại */
+@media (max-width: 768px) {
+    div[style*="position: fixed"][style*="z-index"] > div {
+        width: 95vw !important; /* Chiều rộng gần hết màn hình */
+        max-height: 85vh !important; /* Thấp xuống một chút để dễ thao tác */
+        padding: 15px !important;
+    }
+}
 </style>
 </head>
 <body>
