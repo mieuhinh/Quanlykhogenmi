@@ -3,233 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Kho 4.0</title>
+    <title>Quản Lý Kho Thông Minh</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { padding-bottom: 90px; background-color: #f3f4f6; font-family: sans-serif; }
-        .card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
-        th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: center; }
+        .tab-content { display: none; }
+        .active { display: block; }
+        .active-nav { color: #2563eb; border-bottom: 3px solid #2563eb; }
     </style>
 </head>
-<body>
-
-    <div class="bg-indigo-800 text-white p-4 sticky top-0 flex justify-between items-center shadow-md z-50">
-        <h1 id="page-title" class="font-bold">QUẢN LÝ KHO</h1>
-        <button onclick="fetchData()" class="p-2 bg-indigo-600 rounded-full">🔄</button>
-    </div>
-
-    <div id="content" class="p-4"></div>
-
-    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around p-2 shadow-lg z-50 text-gray-500">
-        <button onclick="renderHome()" class="flex flex-col items-center">🏠<span class="text-[10px]">Home</span></button>
-        <button onclick="renderForm('Nhập')" class="flex flex-col items-center text-green-600">➕<span class="text-[10px]">Nhập</span></button>
-        <button onclick="renderForm('Xuất')" class="flex flex-col items-center text-red-600">➖<span class="text-[10px]">Xuất</span></button>
-        <button onclick="renderReportPeriod()" class="flex flex-col items-center text-indigo-600">📊<span class="text-[10px]">Báo cáo</span></button>
-        <button onclick="renderSettings()" class="flex flex-col items-center">⚙️<span class="text-[10px]">Cài đặt</span></button>
+<body class="bg-gray-100 font-sans">
+    <nav class="bg-white shadow sticky top-0 flex justify-around text-sm font-bold p-3 z-50">
+        <button onclick="showTab('menu')" id="btn-menu" class="active-nav">MENU</button>
+        <button onclick="showTab('nhap')" id="btn-nhap">NHẬP</button>
+        <button onclick="showTab('xuat')" id="btn-xuat">XUẤT</button>
+        <button onclick="showTab('baocao')" id="btn-baocao">BÁO CÁO</button>
     </nav>
 
+    <div class="p-4 mb-20">
+        <div id="tab-menu" class="tab-content active grid grid-cols-2 gap-4">
+            <div class="bg-white p-6 rounded-xl shadow text-center">📦 Sản phẩm</div>
+            <div class="bg-white p-6 rounded-xl shadow text-center">🏬 Kho</div>
+            <div class="bg-white p-6 rounded-xl shadow text-center">🏢 Công ty</div>
+            <div class="bg-white p-6 rounded-xl shadow text-center">🔑 Đăng nhập</div>
+        </div>
+
+        <div id="tab-nhap" class="tab-content">
+            <button onclick="openForm('nhap')" class="w-full bg-blue-600 text-white py-3 rounded-lg mb-4">+ PHIẾU NHẬP MỚI</button>
+            <div id="list-nhap" class="space-y-3"></div>
+        </div>
+        <div id="tab-xuat" class="tab-content">
+            <button onclick="openForm('xuat')" class="w-full bg-red-600 text-white py-3 rounded-lg mb-4">+ PHIẾU XUẤT MỚI</button>
+            <div id="list-xuat" class="space-y-3"></div>
+        </div>
+
+        <div id="tab-baocao" class="tab-content bg-white p-4 rounded-xl shadow">
+            <h2 class="font-bold mb-4">BÁO CÁO TỒN KHO</h2>
+            <div class="space-y-2 mb-4">
+                <input type="date" id="rep-from" class="w-full border p-2 rounded">
+                <input type="date" id="rep-to" class="w-full border p-2 rounded">
+                <button onclick="runReport()" class="w-full bg-green-600 text-white py-2 rounded">XEM BÁO CÁO</button>
+            </div>
+            <div id="report-res" class="text-sm"></div>
+        </div>
+    </div>
+
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqj90HCbwjd43F3bxTWgq5QQB1WVlPb6nOsfMqsrLKCevTCYva3h_Ky8lI9f0_TvbY7A/exec"; 
-        let rawData = { transactions: [], products: [], warehouses: [] };
+        const API = "https://script.google.com/macros/s/AKfycbwyOm-7TspR9Lpe5dNQ5BuQgjEqDePeHBFkW4KfPFlzopL_ozZ0lPjK7UzxxsBGuueo/exec"; 
+        let db = JSON.parse(localStorage.getItem('kho_cache')) || { transactions: [], details: [], products: [] };
 
-        async function fetchData() {
-            document.getElementById('content').innerHTML = "<p class='text-center mt-10 text-gray-400 animate-pulse'>Đang đồng bộ dữ liệu...</p>";
-            const res = await fetch(SCRIPT_URL);
-            rawData = await res.json();
-            renderHome();
+        async function sync() {
+            const r = await fetch(API);
+            db = await r.json();
+            localStorage.setItem('kho_cache', JSON.stringify(db));
+            renderList('nhap'); renderList('xuat');
         }
 
-        function renderHome() {
-            document.getElementById('page-title').innerText = "Trang Chủ";
-            document.getElementById('content').innerHTML = `
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="card p-6 text-center border-b-4 border-indigo-500">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">Giao dịch</p>
-                        <h2 class="text-3xl font-black">${rawData.transactions.length}</h2>
-                    </div>
-                    <div class="card p-6 text-center border-b-4 border-orange-500">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">Sản phẩm</p>
-                        <h2 class="text-3xl font-black">${rawData.products.length}</h2>
-                    </div>
-                </div>
-            `;
+        function showTab(t) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-nav'));
+            document.getElementById('tab-' + t).classList.add('active');
+            document.getElementById('btn-' + t).classList.add('active-nav');
         }
 
-        // --- HÀM QUẢN LÝ DANH MỤC (THÊM/XÓA) ---
-        function renderSettings() {
-            document.getElementById('page-title').innerText = "Thiết Lập Danh Mục";
-            document.getElementById('content').innerHTML = `
-                <div class="space-y-6">
-                    ${renderCategorySection("Sản Phẩm", "DanhMucSP", rawData.products)}
-                    ${renderCategorySection("Kho Hàng", "DanhMucKho", rawData.warehouses)}
-                </div>
-            `;
+        function renderList(type) {
+            const container = document.getElementById('list-' + type);
+            container.innerHTML = '';
+            const filtered = db.transactions.filter(t => t.Loai === type).sort((a,b) => new Date(b.Ngay) - new Date(a.Ngay));
+            
+            filtered.forEach(t => {
+                const items = db.details.filter(d => d.ParentID == t.ID);
+                const sumKg = items.reduce((s, i) => s + Number(i.TongKg), 0);
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 ${type==='nhap'?'border-blue-500':'border-red-500'}">
+                        <div class="flex justify-between text-xs text-gray-500"><span>${t.Ngay}</span><span>${t.Kho}</span></div>
+                        <div class="font-bold text-gray-800">${t.CongTy}</div>
+                        <div class="text-sm text-gray-600">Tổng: ${sumKg.toLocaleString()} Kg | HĐ: ${t.HopDong}</div>
+                    </div>`;
+            });
         }
 
-        function renderCategorySection(label, type, list) {
-            let listHtml = list.map(item => `
-                <div class="flex justify-between items-center p-3 border-b bg-white last:border-0">
-                    <span class="font-medium text-gray-700">${item}</span>
-                    <button onclick="manageCategory('${type}', 'delete', '${item}')" class="text-red-500 text-xs font-bold px-3 py-1 bg-red-50 rounded-lg">XÓA</button>
-                </div>
-            `).join('');
-
-            return `
-                <div class="card">
-                    <div class="p-4 bg-gray-50 font-bold text-sm border-b">${label.toUpperCase()}</div>
-                    <div class="p-4 flex gap-2">
-                        <input id="input-${type}" type="text" placeholder="Thêm mới..." class="flex-1 border p-2 rounded-lg outline-none focus:ring-1 ring-indigo-500">
-                        <button onclick="manageCategory('${type}', 'add')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">+</button>
-                    </div>
-                    <div class="max-h-60 overflow-y-auto">${listHtml || '<p class="p-4 text-gray-400 text-center">Trống</p>'}</div>
-                </div>
-            `;
+        function runReport() {
+            const out = document.getElementById('report-res');
+            out.innerHTML = "Đang tính toán...";
+            // Logic lọc theo ngày và mã sản phẩm tại đây
+            // Công thức: Kg = (Kiện * Quy cách + Túi lẻ) * Net
         }
 
-        async function manageCategory(type, method, value) {
-            if (method === 'add') {
-                value = document.getElementById(`input-${type}`).value.trim();
-                if (!value) return;
-            }
-            if (method === 'delete' && !confirm(`Xóa "${value}" khỏi danh mục?`)) return;
-
-            const payload = { action: "manage_category", type, method, value };
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
-            fetchData(); // Tải lại dữ liệu
-        }
-
-        // --- GIỮ NGUYÊN CÁC HÀM NHẬP XUẤT VÀ BÁO CÁO TỪ BẢN TRƯỚC ---
-        function renderForm(type) {
-            document.getElementById('page-title').innerText = "Phiếu " + type;
-            let whOptions = rawData.warehouses.map(k => `<option value="${k}">${k}</option>`).join('');
-            let pDatalist = `<datalist id="pList">${rawData.products.map(p => `<option value="${p}">`).join('')}</datalist>`;
-
-            document.getElementById('content').innerHTML = `
-                ${pDatalist}
-                <div class="card p-4 mb-4 border-l-8 ${type==='Nhập'?'border-green-500':'border-red-500'}">
-                    <label class="text-[10px] font-bold text-gray-400 italic">SỐ PHIẾU / CHỨNG TỪ</label>
-                    <input id="soPhieu" type="text" placeholder="VD: PN001" class="w-full border-b-2 py-2 mb-4 outline-none focus:border-indigo-500">
-                    <label class="text-[10px] font-bold text-gray-400">CHỌN KHO HÀNG</label>
-                    <select id="kho" class="w-full bg-gray-50 p-3 rounded-lg mt-1 outline-none shadow-inner">${whOptions}</select>
-                </div>
-                <div class="card p-4 mb-4">
-                    <input id="maSP" list="pList" type="text" placeholder="Mã sản phẩm (Tự gợi ý...)" class="w-full border p-3 mb-3 rounded-lg outline-none focus:ring-2 ring-indigo-200">
-                    <input id="soluong" type="number" placeholder="Số lượng" class="w-full border p-3 mb-4 rounded-lg outline-none">
-                    <button onclick="addItem()" class="w-full py-3 bg-indigo-50 text-indigo-700 rounded-lg font-bold border border-indigo-200 active:bg-indigo-100">+ THÊM MẶT HÀNG</button>
-                </div>
-                <div id="listDisplay"></div>
-                <button id="btnSave" onclick="submitForm('${type}')" class="hidden w-full bg-indigo-700 text-white p-4 rounded-xl font-bold mt-4 shadow-lg active:scale-95 transition uppercase tracking-widest">Gửi Phiếu Lên Cloud</button>
-            `;
-        }
-
-        let tempItems = [];
-        function addItem() {
-            const m = document.getElementById('maSP').value.trim();
-            const s = document.getElementById('soluong').value;
-            if(!m || !s) return alert("Vui lòng nhập đủ thông tin!");
-            tempItems.push({ maSP: m, soluong: Number(s) });
-            let h = '<div class="card p-2 bg-gray-50">';
-            tempItems.forEach((it, i) => h += `<div class="flex justify-between p-2 border-b text-sm"><span>${i+1}. <b>${it.maSP}</b></span><b>${it.soluong}</b></div>`);
-            document.getElementById('listDisplay').innerHTML = h + '</div>';
-            document.getElementById('maSP').value = ""; document.getElementById('soluong').value = "";
-            document.getElementById('btnSave').classList.remove('hidden');
-        }
-
-        async function submitForm(type) {
-            const btn = document.getElementById('btnSave');
-            btn.innerText = "ĐANG XỬ LÝ..."; btn.disabled = true;
-            const payload = { action: "add_transaction", loai: type, kho: document.getElementById('kho').value, soPhieu: document.getElementById('soPhieu').value || "KSP", items: tempItems };
-            await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
-            alert("Đã lưu thành công!"); fetchData();
-        }
-
-        function renderReportPeriod() {
-            document.getElementById('page-title').innerText = "Báo Cáo Tồn Kho";
-            const today = new Date().toISOString().split('T')[0];
-            let whOptions = `<option value="ALL">Tất cả kho</option>` + rawData.warehouses.map(k => `<option value="${k}">${k}</option>`).join('');
-            document.getElementById('content').innerHTML = `
-                <div class="card p-4 mb-4">
-                    <select id="filterKho" class="w-full border p-2 mb-3 rounded-lg">${whOptions}</select>
-                    <div class="grid grid-cols-2 gap-2 mb-4 text-[10px]">
-                        <div>TỪ NGÀY<input type="date" id="dFrom" value="${today}" class="w-full border p-2 rounded text-base"></div>
-                        <div>ĐẾN NGÀY<input type="date" id="dTo" value="${today}" class="w-full border p-2 rounded text-base"></div>
-                    </div>
-                    <button onclick="calculate()" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-bold">XEM BÁO CÁO</button>
-                </div>
-                <div id="reportArea" class="overflow-x-auto rounded-lg bg-white shadow"></div>
-            `;
-        }
-
-        function calculate() {
-    const fWh = document.getElementById('filterKho').value;
-    const tF = new Date(document.getElementById('dFrom').value + "T00:00:00");
-    const tT = new Date(document.getElementById('dTo').value + "T23:59:59");
-    let stats = {};
-
-    rawData.transactions.forEach(r => {
-        const rowDate = new Date(r[0]);
-        const type = r[1];
-        const sku = r[2]; // Mã sản phẩm
-        const qty = Number(r[3]);
-        const wh = r[4];  // Tên kho
-
-        // Lọc theo kho nếu người dùng chọn một kho cụ thể
-        if (fWh !== "ALL" && wh !== fWh) return;
-
-        // Định danh duy nhất: 
-        // Nếu xem tất cả kho thì gộp SKU + Kho để tính riêng từng dòng.
-        // Nếu xem 1 kho cụ thể thì chỉ dùng SKU làm key.
-        const key = (fWh === "ALL") ? `${sku} [${wh}]` : sku;
-
-        if (!stats[key]) {
-            stats[key] = { sku: sku, wh: wh, d: 0, n: 0, x: 0 };
-        }
-
-        if (rowDate < tF) {
-            stats[key].d += (type === "Nhập" ? qty : -qty);
-        } else if (rowDate <= tT) {
-            if (type === "Nhập") stats[key].n += qty; 
-            else stats[key].x += qty;
-        }
-    });
-
-    // Tạo bảng hiển thị
-    let h = `<table class="w-full text-xs">
-        <thead>
-            <tr class="bg-indigo-50 text-indigo-900 font-bold">
-                <th class="p-2 text-left">Mã Sản Phẩm</th>
-                ${fWh === "ALL" ? '<th class="p-2 text-left">Kho</th>' : ''}
-                <th class="p-2">Đầu kỳ</th>
-                <th class="p-2 text-green-700">Nhập</th>
-                <th class="p-2 text-red-700">Xuất</th>
-                <th class="p-2 bg-indigo-100">Cuối kỳ</th>
-            </tr>
-        </thead>
-        <tbody>`;
-    
-    for (let k in stats) {
-        let s = stats[k]; 
-        let cuoiKy = s.d + s.n - s.x;
-        h += `<tr class="border-b hover:bg-gray-50">
-            <td class="p-3 text-left font-bold text-gray-800">${s.sku}</td>
-            ${fWh === "ALL" ? `<td class="p-3 text-left text-gray-500">${s.wh}</td>` : ''}
-            <td class="p-3 text-gray-600">${s.d}</td>
-            <td class="p-3 text-green-600 font-bold">${s.n}</td>
-            <td class="p-3 text-red-600 font-bold">${s.x}</td>
-            <td class="p-3 font-black text-indigo-700 bg-indigo-50 text-center">${cuoiKy}</td>
-        </tr>`;
-    }
-    
-    if (Object.keys(stats).length === 0) {
-        h += `<tr><td colspan="6" class="p-10 text-center text-gray-400 italic">Không có dữ liệu trong khoảng thời gian này</td></tr>`;
-    }
-
-    document.getElementById('reportArea').innerHTML = h + "</tbody></table>";
-}
-
-
-
-        fetchData();
+        window.onload = sync;
     </script>
 </body>
 </html>
