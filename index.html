@@ -1272,6 +1272,61 @@ div[style*="position: fixed"][style*="z-index"] > div {
         
         // Vietnamese PhuocIT Offline Application  
         class VietnamesePhuocIT {
+			// BẮT ĐẦU DO HÀM AI TẠO RA
+			// Hàm thêm một dòng nhập sản phẩm mới
+addImportRow() {
+    const rowHTML = `
+    <div class="import-item" style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 1fr 50px; gap: 8px; margin-bottom: 10px; align-items: end;">
+        <input type="text" name="names[]" required placeholder="Tên SP" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <select name="categories[]" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            ${this.getCategoryOpDons()}
+        </select>
+        <input type="number" name="importPrices[]" required placeholder="Giá nhập" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <input type="number" name="prices[]" required placeholder="Giá bán" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <input type="number" name="stocks[]" required min="1" placeholder="SL" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <input type="number" name="minStocks[]" value="10" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background: #fee2e2; color: #ef4444; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">✕</button>
+    </div>`;
+    document.getElementById('product-import-items').insertAdjacentHTML('beforeend', rowHTML);
+}
+
+// Hàm xử lý khi nhấn "Xác nhận nhập kho"
+addMultipleProducts(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    const supplier = formData.get('common_supplier');
+    const importDate = formData.get('import_date');
+    
+    const names = formData.getAll('names[]');
+    const categories = formData.getAll('categories[]');
+    const importPrices = formData.getAll('importPrices[]');
+    const prices = formData.getAll('prices[]');
+    const stocks = formData.getAll('stocks[]');
+    const minStocks = formData.getAll('minStocks[]');
+
+    names.forEach((name, i) => {
+        const newProduct = {
+            id: 'SP' + String(this.demoData.products.length + 1).padStart(3, '0'),
+            name: name,
+            category: categories[i],
+            importPrice: parseInt(importPrices[i]),
+            price: parseInt(prices[i]),
+            stock: parseInt(stocks[i]),
+            minStock: parseInt(minStocks[i]),
+            supplier: supplier,
+            importDate: importDate // Lưu ngày nhập hàng
+        };
+        this.demoData.products.push(newProduct);
+    });
+
+    this.saveToLocalStorage();
+    this.showNoDficaDon(`Đã nhập thành công ${names.length} mặt hàng vào kho`, 'success');
+    this.loadPage('products');
+    form.closest("div[style*='fixed']").remove();
+}
+			//KẾT HÀM DO AI TẠO RA
             constructor() {
                 this.currentPage = 'dashboard';
                 // Clear old data with wrong dates
@@ -5307,70 +5362,80 @@ div[style*="position: fixed"][style*="z-index"] > div {
                 const modal = form.closest("div[style*=\"fixed\"]"); if(modal) modal.remove();
             }
             
-            // Product Management Functions  
+            // Product Management Functions  CHỈNH SỬA THEO AI
             showAddProductForm() {
-                const supplierOptions = this.demoData.suppliers.map(s => 
-                    `<option value="${s.id}">${s.name}</option>`
-                ).join('');
-                
-                const formHTML = `
-                    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1001; display: flex; justify-content: center; align-items: center;" onclick="closeModal(this)">
-                        <div style="background: white; padding: 32px; border-radius: 12px; width: 500px; max-width: 90vw;" onclick="event.stopPropagation()">
-                            <h3 style="margin-bottom: 24px; color: var(--text-primary);">Thêm sản phẩm mới</h3>
-                            <form onsubmit="app.addProduct(event)">
-                                <div style="margin-bottom: 16px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tên sản phẩm:</label>
-                                    <input type="text" name="name" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                                </div>
-                                <div style="margin-bottom: 16px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Danh mục:</label>
-                                    <select name="category" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;" id="categorySelect">
-                                        ${this.getCategoryOptions()}
-                                    </select>
-                                </div>
-                                <div style="margin-bottom: 16px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Giá nhập:</label>
-                                    <input type="number" name="importPrice" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                                </div>
-                                <div style="margin-bottom: 16px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Giá bán:</label>
-                                    <input type="number" name="price" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                                </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                    <div>
-                                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Số lượng tồn kho:</label>
-                                        <input type="number" name="stock" required min="0" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">🔔 Tồn kho tối thiểu:</label>
-                                        <input type="number" name="minStock" value="10" required min="0" style="width: 100%; padding: 12px; border: 2px solid #f59e0b; border-radius: 8px;" placeholder="Cảnh báo khi dưới...">
-                                    </div>
-                                </div>
-                                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                                    <div style="display: flex; align-items: center; gap: 8px; color: #92400e; font-size: 14px;">
-                                        <span>💡</span>
-                                        <span><strong>Mẹo:</strong> Hệ thống sẽ cảnh báo khi tồn kho thấp hơn hoặc bằng ngưỡng tối thiểu</span>
-                                    </div>
-                                </div>
-                                <div style="margin-bottom: 24px;">
-                                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nhà cung cấp:</label>
-                                    <select name="supplier" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
-                                        <option value="">Chọn nhà cung cấp</option>
-                                        ${supplierOptions}
-                                    </select>
-                                </div>
-                                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                                    <button type="button" onclick="closeModal(this.closest('div[style*=fixed]'))" 
-                                            style="padding: 12px 24px; border: 2px solid #e5e7eb; background: white; border-radius: 8px; cursor: pointer;">Hủy</button>
-                                    <button type="submit" 
-                                            style="padding: 12px 24px; background: var(--primary-blue); color: white; border: none; border-radius: 8px; cursor: pointer;">Thêm sản phẩm</button>
-                                </div>
-                            </form>
+    const supplierOptions = this.demoData.suppliers.map(s => 
+        `<option value="${s.id}">${s.name}</option>`
+    ).join('');
+    
+    // Lấy ngày hiện tại định dạng YYYY-MM-DD
+    const today = this.getVietnamTime().toISOString().split('T')[0];
+
+    const formHTML = `
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1001; display: flex; justify-content: center; align-items: center; overflow-y: auto;" onclick="closeModal(this)">
+        <div style="background: white; padding: 32px; border-radius: 12px; width: 1100px; max-width: 95vw; margin: 20px auto;" onclick="event.stopPropagation()">
+            <h3 style="margin-bottom: 24px; color: var(--text-primary); border-bottom: 2px solid #eee; padding-bottom: 10px;">📦 Nhập lô hàng sản phẩm mới</h3>
+            
+            <form onsubmit="app.addMultipleProducts(event)">
+                <div style="display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nhà cung cấp:</label>
+                        <select name="common_supplier" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                            <option value="">-- Chọn nhà cung cấp --</option>
+                            ${supplierOptions}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Ngày nhập hàng:</label>
+                        <input type="date" name="import_date" value="${today}" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 12px; font-weight: 600; font-size: 16px;">Danh sách mặt hàng:</label>
+                    <div id="product-import-items">
+                        <div class="import-item" style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 1fr 50px; gap: 8px; margin-bottom: 10px; align-items: end;">
+                            <div>
+                                <label style="font-size: 12px; color: #666;">Tên sản phẩm</label>
+                                <input type="text" name="names[]" required placeholder="Tên SP" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; color: #666;">Danh mục</label>
+                                <select name="categories[]" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                    ${this.getCategoryOpDons()}
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; color: #666;">Giá nhập</label>
+                                <input type="number" name="importPrices[]" required placeholder="Giá nhập" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; color: #666;">Giá bán</label>
+                                <input type="number" name="prices[]" required placeholder="Giá bán" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; color: #666;">Số lượng</label>
+                                <input type="number" name="stocks[]" required min="1" placeholder="SL" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div>
+                                <label style="font-size: 12px; color: #666;">Tồn tối thiểu</label>
+                                <input type="number" name="minStocks[]" value="10" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <button type="button" onclick="this.parentElement.remove()" style="background: #fee2e2; color: #ef4444; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">✕</button>
                         </div>
                     </div>
-                `;
-                document.body.insertAdjacentHTML('beforeend', formHTML);
-            }
+                    <button type="button" onclick="app.addImportRow()" style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: 600;">+ Thêm dòng sản phẩm</button>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <button type="button" onclick="closeModal(this.closest('div[style*=fixed]'))" style="padding: 12px 24px; border: 2px solid #e5e7eb; background: white; border-radius: 8px; cursor: pointer;">Hủy bỏ</button>
+                    <button type="submit" style="padding: 12px 24px; background: var(--primary-blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Xác nhận nhập kho</button>
+                </div>
+            </form>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', formHTML);
+}
             
             addProduct(event) {
                 event.preventDefault();
